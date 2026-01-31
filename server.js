@@ -1,3 +1,4 @@
+require("dotenv").config({ path: "./.env.local" });
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -14,10 +15,12 @@ mongoose
 
 // Routes
 const authRoutes = require("./routes/auth");
+const kitchenRoutes = require("./routes/kitchen");
 const menuRoutes = require("./routes/menu");
 const orderRoutes = require("./routes/orders");
 
 app.use("/api/auth", authRoutes);
+app.use("/api/kitchen", kitchenRoutes);
 app.use("/api/menu", menuRoutes);
 app.use("/api/orders", orderRoutes);
 

@@ -8,11 +8,24 @@ const router = express.Router();
 
 // Register (Admin only)
 router.post("/register", auth, roleCheck(["admin"]), async (req, res) => {
-  const { name, email, password, phone, role } = req.body;
+  //const { name, email, password, phone, role } = req.body;
+  //firstname, lastname, email, phone, role, password
+  const { firstname, lastname, email, phone, role, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
-  const user = new User({ name, email, password: hashedPassword, phone, role });
+  const user = new User({
+    firstname,
+    lastname,
+    email,
+    phone,
+    role,
+    password: hashedPassword,
+  });
   await user.save();
   res.json(user);
+});
+
+router.get("/validate", auth, (req, res) => {
+  res.json({ role: req.user.role });
 });
 
 // Login
@@ -29,7 +42,8 @@ router.post("/login", async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: "1h" },
   );
-  res.json({ token, role: user.role });
+  //res.json({ token, role: user.role });
+  res.json({ token, user });
 });
 
 // Update password (self)
