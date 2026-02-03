@@ -1,5 +1,6 @@
 const express = require("express");
 const Kitchen = require("../models/Kitchen");
+const Menu = require("../models/Menu");
 
 const { auth, roleCheck } = require("../middleware/auth");
 
@@ -116,27 +117,24 @@ router.get(
   },
 );
 //================================
-router.get(
-  "/serving",
-  auth,
-  roleCheck(["kitchen", "admin"]),
-  async (req, res) => {
-    try {
-      const kitchenDoc = await Kitchen.findOne();
-      if (!kitchenDoc) {
-        return res.status(400).json({ error: "Kitchen not found" });
-      }
-
-      // Sort foods by createdAt descending (latest first)
-      const foods = kitchenDoc.foods.sort((a, b) => b.createdAt - a.createdAt);
-
-      res.json(foods);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Server error" });
+router.get("/serving", auth, async (req, res) => {
+  try {
+    const kitchenDoc = await Kitchen.findOne();
+    if (!kitchenDoc) {
+      return res
+        .status(400)
+        .json({ error: "Kitchen not found. Admin's attention required." });
     }
-  },
-);
+
+    // Sort foods by createdAt descending (latest first)
+    const foods = kitchenDoc.foods.sort((a, b) => b.createdAt - a.createdAt);
+
+    res.json(foods);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 router.get("/serving/recent", async (req, res) => {
   try {
@@ -178,8 +176,23 @@ router.post("/serving", auth, roleCheck(["kitchen"]), async (req, res) => {
   try {
     const { name, weight, extra } = req.body;
 
-    // Find the Kitchen doc (assuming you have one main Kitchen doc)
+    // Find the Kitchen doc (assuming there's one main Kitchen doc)
     const kitchenDoc = await Kitchen.findOne();
+
+    // Find the Menu doc (assuming there's one main Menu doc)
+    const menuDoc = await Menu.findOne();
+    if (!menuDoc) {
+      return res.status(400).json({
+        error: "Menu setup is missing. Admin must first configure it.",
+      });
+    }
+    // Find the matching item
+    const itemInMenu = menuDoc.menu.find((m) => m.name === name);
+    if (!itemInMenu) {
+      return res.status(400).json({
+        error: "Menu item not found!",
+      });
+    }
 
     // if (!kitchenDoc) {
     //   return res.status(404).json({ error: "Kitchen not found" });
@@ -205,12 +218,22 @@ router.post("/serving", auth, roleCheck(["kitchen"]), async (req, res) => {
     // Calculate difference
     const finalWeight = Math.abs(container.wgt - weight);
 
+    const quantity = finalWeight / container.scoop;
+    console.log(
+      `Entry: ${finalWeight}, ${Math.round(quantity)}, ${itemInMenu.price}`,
+    );
+
     // Push new food into foods array
     kitchenDoc.foods.push({
       name,
+      kitchenWgt: weight,
       wgt: finalWeight,
+      qty: Math.round(quantity),
+      price: itemInMenu.price,
+      expectedTotal: Math.round(quantity) * itemInMenu.price,
       addition: extra,
     });
+    console.log("Pushed: ", kitchenDoc.foods);
 
     await kitchenDoc.save();
     console.log("Serving ", kitchenDoc.foods);

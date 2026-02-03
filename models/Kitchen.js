@@ -23,7 +23,11 @@ const containerSchema = new mongoose.Schema({
 
 const foodSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  kitchenWgt: { type: Number, required: true },
   wgt: { type: Number, required: true },
+  qty: { type: Number, required: true },
+  price: { type: Number, required: true },
+  expectedTotal: { type: Number, required: true },
   addition: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
