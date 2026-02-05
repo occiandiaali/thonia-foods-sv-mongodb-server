@@ -56,9 +56,14 @@ router.put("/password", auth, async (req, res) => {
 
 // Delete user (Admin only)
 router.delete("/:id", auth, roleCheck(["admin"]), async (req, res) => {
-  await User.findByIdAndDelete(req.params.id);
-  //User.findOneAndDelete
-  res.json({ msg: "User deleted" });
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    //User.findOneAndDelete
+    res.json({ msg: "User deleted" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 // Get all users
