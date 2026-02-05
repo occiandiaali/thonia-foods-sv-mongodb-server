@@ -25,7 +25,7 @@ router.get("/", auth, roleCheck(["attendant", "admin"]), async (req, res) => {
     }
 
     res.json(drinkInMenu);
-    console.log("DrinkMenuItem", drinkInMenu);
+    // console.log("DrinkMenuItem", drinkInMenu);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
@@ -58,7 +58,7 @@ router.post("/", auth, roleCheck(["admin"]), async (req, res) => {
     }
     // const menuItem = new Menu(req.body);
     await menuDoc.save();
-    console.log("Menu added: ", menuDoc);
+    // console.log("Menu added: ", menuDoc);
     res.json(menuDoc.menu);
   } catch (err) {
     console.error(err);

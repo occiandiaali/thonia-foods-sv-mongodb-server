@@ -144,6 +144,8 @@ router.get(
     try {
       const since = new Date();
       since.setDate(since.getDate() - 1); // last 24h
+      const now = new Date();
+      const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
 
       const kitchenDoc = await Kitchen.findOne();
       if (!kitchenDoc) {
@@ -151,7 +153,7 @@ router.get(
       }
 
       const recentFoods = kitchenDoc.foods.filter(
-        (food) => food.createdAt >= since,
+        (food) => food.createdAt >= twelveHoursAgo,
       );
       res.json(recentFoods);
     } catch (err) {
@@ -270,10 +272,10 @@ router.post("/serving", auth, roleCheck(["kitchen"]), async (req, res) => {
       expectedTotal: Math.round(quantity) * itemInMenu.price,
       addition: extra,
     });
-    console.log("Pushed: ", kitchenDoc.foods);
+    //console.log("Pushed: ", kitchenDoc.foods);
 
     await kitchenDoc.save();
-    console.log("Serving ", kitchenDoc.foods);
+    // console.log("Serving ", kitchenDoc.foods);
 
     res.json(kitchenDoc);
   } catch (err) {
@@ -342,7 +344,7 @@ router.delete(
 
 module.exports = router;
 
-// const FoodHistory = require("./models/FoodHistory");
+// BEWARE: DO NOT DELETE THE FOLLOWING, KEPT FOR REFERENCE
 
 // router.post("/archive-foods", auth, roleCheck(["admin"]), async (req, res) => {
 //   try {
