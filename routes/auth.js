@@ -61,4 +61,15 @@ router.delete("/:id", auth, roleCheck(["admin"]), async (req, res) => {
   res.json({ msg: "User deleted" });
 });
 
+// Get all users
+router.get("/", auth, roleCheck(["admin"]), async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;

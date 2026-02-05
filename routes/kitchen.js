@@ -136,24 +136,29 @@ router.get("/serving", auth, async (req, res) => {
   }
 });
 
-router.get("/serving/recent", async (req, res) => {
-  try {
-    const since = new Date();
-    since.setDate(since.getDate() - 1); // last 24h
+router.get(
+  "/serving/recent",
+  auth,
+  roleCheck(["admin", "kitchen", "attendant"]),
+  async (req, res) => {
+    try {
+      const since = new Date();
+      since.setDate(since.getDate() - 1); // last 24h
 
-    const kitchenDoc = await Kitchen.findOne();
-    if (!kitchenDoc) {
-      return res.status(400).json({ error: "Kitchen not found" });
+      const kitchenDoc = await Kitchen.findOne();
+      if (!kitchenDoc) {
+        return res.status(400).json({ error: "Kitchen not found" });
+      }
+
+      const recentFoods = kitchenDoc.foods.filter(
+        (food) => food.createdAt >= since,
+      );
+      res.json(recentFoods);
+    } catch (err) {
+      res.status(500).json({ error: "Server error" });
     }
-
-    const recentFoods = kitchenDoc.foods.filter(
-      (food) => food.createdAt >= since,
-    );
-    res.json(recentFoods);
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
+  },
+);
 
 // [
 //   {
@@ -172,6 +177,38 @@ router.get("/serving/recent", async (req, res) => {
 
 //===============================================
 
+router.post(
+  "/serving/attendant-confirm",
+  auth,
+  roleCheck(["attendant"]),
+  async (req, res) => {
+    try {
+      const { name, weight } = req.body;
+      // Find the Kitchen doc (assuming there's one main Kitchen doc)
+      const kitchenDoc = await Kitchen.findOne();
+      if (!kitchenDoc) {
+        return res.status(400).json({
+          error:
+            "Kitchen setup is missing. Please contact an admin to configure containers.",
+        });
+      }
+      // Find matching container
+      const container = kitchenDoc.containers.find((c) => c.name === name);
+      if (!container) {
+        return res.status(422).json({
+          error: `No container found for '${name}'. Please ask an admin to add it before serving.`,
+        });
+      }
+      // Calculate difference
+      const foodWeight = Math.abs(container.wgt - weight);
+      res.json(foodWeight);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    }
+  },
+);
+//================================
 router.post("/serving", auth, roleCheck(["kitchen"]), async (req, res) => {
   try {
     const { name, weight, extra } = req.body;

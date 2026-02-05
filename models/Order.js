@@ -9,10 +9,16 @@ const mongoose = require("mongoose");
 //   },
 //   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 // });
-const orderSchema = new mongoose.Schema({
-  items: [{ name: String, unit: Number, quantity: Number, subTotal: Number }],
-  gTotal: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now }, // useful for cleanup/export
-});
+const orderSchema = new mongoose.Schema(
+  {
+    orderId: String,
+    attendant: String,
+    items: [{ name: String, quantity: Number, subTotal: Number }],
+    total: { type: Number, default: 0 },
+    paidBy: String, // 'Cash', 'Transfer', or 'Card'
+    // createdAt: { type: Date, default: Date.now }, // useful for cleanup/export
+  },
+  { timestamps: true },
+);
 
 module.exports = mongoose.model("Order", orderSchema);
