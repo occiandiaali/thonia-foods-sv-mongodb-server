@@ -66,6 +66,18 @@ router.delete("/:id", auth, roleCheck(["admin"]), async (req, res) => {
   }
 });
 
+// Edit user (Admin only)
+router.put("/:id", auth, roleCheck(["admin"]), async (req, res) => {
+  const { user } = req.body;
+  try {
+    await User.findByIdAndUpdate(user);
+    res.json({ msg: "Updated user" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get all users
 router.get("/", auth, roleCheck(["admin"]), async (req, res) => {
   try {

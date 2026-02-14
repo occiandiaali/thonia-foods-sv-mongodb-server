@@ -136,31 +136,32 @@ router.get("/serving", auth, async (req, res) => {
   }
 });
 
-router.get(
-  "/serving/recent",
-  auth,
-  roleCheck(["admin", "kitchen", "attendant"]),
-  async (req, res) => {
-    try {
-      const since = new Date();
-      since.setDate(since.getDate() - 1); // last 24h
-      const now = new Date();
-      const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+router.get("/recent", auth, async (req, res) => {
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - 1); // last 24h
+    const now = new Date();
+    const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
 
-      const kitchenDoc = await Kitchen.findOne();
-      if (!kitchenDoc) {
-        return res.status(400).json({ error: "Kitchen not found" });
-      }
-
-      const recentFoods = kitchenDoc.foods.filter(
-        (food) => food.createdAt >= twelveHoursAgo,
-      );
-      res.json(recentFoods);
-    } catch (err) {
-      res.status(500).json({ error: "Server error" });
+    const kitchenDoc = await Kitchen.findOne();
+    if (!kitchenDoc) {
+      return res.status(400).json({ error: "Kitchen not found" });
     }
-  },
-);
+
+    const recentFoods = kitchenDoc.foods.filter(
+      (food) => food.createdAt >= twelveHoursAgo,
+    );
+    const recentSnacks = kitchenDoc.snacks.filter(
+      (snack) => snack.createdAt >= twelveHoursAgo,
+    );
+    // // const allRecents = [...recentFoods, ...recentSnacks];
+    // console.log("FoodData: ", recentFoods);
+    // console.log("SnackData: ", recentSnacks);
+    res.json({ foodData: recentFoods, snackData: recentSnacks });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 // [
 //   {
@@ -180,7 +181,7 @@ router.get(
 //===============================================
 
 router.post(
-  "/serving/attendant-confirm",
+  "/attendant-confirm",
   auth,
   roleCheck(["attendant"]),
   async (req, res) => {
@@ -211,7 +212,7 @@ router.post(
   },
 );
 //================================
-router.post("/serving", auth, roleCheck(["kitchen"]), async (req, res) => {
+router.post("/food", auth, roleCheck(["kitchen"]), async (req, res) => {
   try {
     const { name, weight, extra } = req.body;
 
@@ -229,7 +230,7 @@ router.post("/serving", auth, roleCheck(["kitchen"]), async (req, res) => {
     const itemInMenu = menuDoc.menu.find((m) => m.name === name);
     if (!itemInMenu) {
       return res.status(400).json({
-        error: "Menu item not found!",
+        error: "This item is not in the Menu!",
       });
     }
 
@@ -258,9 +259,9 @@ router.post("/serving", auth, roleCheck(["kitchen"]), async (req, res) => {
     const finalWeight = Math.abs(container.wgt - weight);
 
     const quantity = finalWeight / container.scoop;
-    console.log(
-      `Entry: ${finalWeight}, ${Math.round(quantity)}, ${itemInMenu.price}`,
-    );
+    // console.log(
+    //   `Entry: ${finalWeight}, ${Math.round(quantity)}, ${itemInMenu.price}`,
+    // );
 
     // Push new food into foods array
     kitchenDoc.foods.push({
@@ -270,6 +271,58 @@ router.post("/serving", auth, roleCheck(["kitchen"]), async (req, res) => {
       qty: Math.round(quantity),
       price: itemInMenu.price,
       expectedTotal: Math.round(quantity) * itemInMenu.price,
+      addition: extra,
+    });
+    //console.log("Pushed: ", kitchenDoc.foods);
+
+    await kitchenDoc.save();
+    // console.log("Serving ", kitchenDoc.foods);
+
+    res.json(kitchenDoc);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+//******************************* */
+router.post("/snack", auth, roleCheck(["kitchen"]), async (req, res) => {
+  try {
+    const { name, count, extra } = req.body;
+
+    // Find the Kitchen doc (assuming there's one main Kitchen doc)
+    const kitchenDoc = await Kitchen.findOne();
+
+    // Find the Menu doc (assuming there's one main Menu doc)
+    const menuDoc = await Menu.findOne();
+    if (!menuDoc) {
+      return res.status(400).json({
+        error: "Menu setup is missing. Admin must first configure it.",
+      });
+    }
+    // Find the matching item
+    const itemInMenu = menuDoc.menu.find((m) => m.name === name);
+    if (!itemInMenu) {
+      return res.status(400).json({
+        error: "This item is not in the menu!",
+      });
+    }
+
+    // if (!kitchenDoc) {
+    //   return res.status(404).json({ error: "Kitchen not found" });
+    // }
+    if (!kitchenDoc) {
+      return res.status(400).json({
+        error:
+          "Kitchen setup is missing. Please contact an admin to configure containers.",
+      });
+    }
+
+    // Push new food into foods array
+    kitchenDoc.snacks.push({
+      name,
+      qty: count,
+      price: itemInMenu.price,
+      expectedTotal: count * itemInMenu.price,
       addition: extra,
     });
     //console.log("Pushed: ", kitchenDoc.foods);

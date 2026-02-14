@@ -32,9 +32,19 @@ const foodSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+const snackSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  qty: { type: Number, required: true },
+  price: { type: Number, required: true },
+  expectedTotal: { type: Number, required: true },
+  addition: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+});
+
 const kitchenSchema = new mongoose.Schema({
   containers: [containerSchema], // array of containers
   foods: [foodSchema], // array of foods
+  snacks: [snackSchema], // array of snacks
   createdAt: { type: Date, default: Date.now }, // useful for cleanup/export
 });
 
